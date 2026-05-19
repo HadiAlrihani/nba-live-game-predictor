@@ -1,6 +1,5 @@
 import xgboost as xgb
 import pandas as pd
-from sklearn.calibration import CalibratedClassifierCV
 
 # get training data
 games2124 = pd.read_csv("../pregame-data/games2124.csv")
@@ -30,3 +29,5 @@ pregame_model.fit(
     eval_set=[(X_validate, y_validate)],
     verbose=True
 )
+
+pregame_model.save_model("pregame_model.json")
