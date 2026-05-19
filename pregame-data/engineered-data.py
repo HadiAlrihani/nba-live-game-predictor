@@ -1,14 +1,20 @@
 from nba_api.stats.static import teams
 import pandas as pd
+import math
 
 # elo expected win probability formula for team1
 def expected_win_prob(team1_elo, team2_elo):
     return 1 / (1 + 10 ** (-(team1_elo - team2_elo) / 400))
 
 # update elo rating, using strength update = 20
-def calculate_elo(team1_elo, team2_elo, actual, k=20):
+def calculate_elo(team1_elo, team2_elo, actual, margin, k=20):
     expected = expected_win_prob(team1_elo, team2_elo)
-    new_elo = team1_elo + k * (actual - expected)
+
+    # margin-of-victory multiplier
+    mov_multiplier = math.log(abs(margin) + 1) * (2.2 / ((team1_elo - team2_elo) * 0.001 + 2.2))
+
+    new_elo = team1_elo + k * mov_multiplier * (actual - expected)
+
     return int(new_elo)
 
 # modify each game in a season
@@ -158,8 +164,8 @@ def clean_season_games(season_games):
         })
 
         # update season stats including the game
-        team_stats.loc[team1, "ELO"] = calculate_elo(team1_elo, team2_elo, game.WL_A)
-        team_stats.loc[team2, "ELO"] = calculate_elo(team2_elo, team1_elo, game.WL_B)
+        team_stats.loc[team1, "ELO"] = calculate_elo(team1_elo, team2_elo, game.WL_A, game.PLUS_MINUS_A)
+        team_stats.loc[team2, "ELO"] = calculate_elo(team2_elo, team1_elo, game.WL_B, game.PLUS_MINUS_B)
         
         team_stats.loc[team1, "Wins"] += game.WL_A
         team_stats.loc[team1, "Losses"] += game.WL_B
